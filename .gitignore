@@ -1,0 +1,17 @@
+node_modules/
+release/
+test-artifacts/
+coverage/
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+*.pem
+*.key
+*.p12
+*.pfx
+credential.bin
+settings.json
+routing.json

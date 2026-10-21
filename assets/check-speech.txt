@@ -1,0 +1,4 @@
+Diagnostic fixture: locally synthesized English speech using espeak-ng.
+Text: "Hello. The meeting starts tomorrow morning."
+Format: mono 16 kHz signed 16-bit little-endian PCM.
+Only sent after the user clicks a sample translation check.

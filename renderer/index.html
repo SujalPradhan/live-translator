@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Gemini Audio</title>
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="brand"><span class="brand-icon" aria-hidden="true">≋</span><div><h1>Gemini Audio</h1><p>Your conversation. Your language.</p></div></div>
+      <div class="header-actions"><label class="theme-picker">Theme<select id="theme" aria-label="Color theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label><button id="settings-open" class="quiet">Settings <span aria-hidden="true">⚙</span></button></div>
+    </header>
+
+    <section id="setup" class="setup" hidden>
+      <h2>Connect your meeting audio</h2><p id="setup-message"></p>
+      <button id="setup-button" class="primary">Set up audio</button>
+    </section>
+    <p id="notice" class="notice" role="status" hidden></p>
+
+    <section class="devices" aria-label="Your physical audio devices">
+      <label>YOUR MICROPHONE<select id="microphone" aria-label="Physical microphone"><option value="">System default · automatic</option></select><span id="mic-selected" class="selected-hint">Finding devices…</span></label>
+      <label>YOU LISTEN ON<select id="speaker" aria-label="Physical headphones or speaker"><option value="">System default · automatic</option></select><span id="speaker-selected" class="selected-hint">Finding devices…</span></label>
+    </section>
+
+    <section class="translation-card" id="voice-card">
+      <div class="card-heading"><div class="direction-icon" aria-hidden="true">↑</div><div><h2>Translate my voice</h2><p>What others hear in the meeting</p></div><span class="mode" id="voice-mode">NORMAL</span></div>
+      <div class="controls"><label>Others hear<select id="voice-target" aria-label="Voice target language"></select></label><button id="voice-toggle" class="start" disabled>Start translation <span aria-hidden="true">↗</span></button></div>
+      <p class="route-status" id="voice-status" role="status">Connecting audio…</p>
+      <div class="sample-check"><button id="voice-check" class="text-button" type="button">Test with sample</button><span id="voice-check-status" class="check-result" role="status"></span></div>
+    </section>
+
+    <section class="translation-card" id="listen-card">
+      <div class="card-heading"><div class="direction-icon listen-icon" aria-hidden="true">↓</div><div><h2>Translate listening audio</h2><p>What you hear from the meeting</p></div><span class="mode" id="listen-mode">NORMAL</span></div>
+      <div class="controls"><label>I hear<select id="listen-target" aria-label="Listening target language"></select></label><button id="listen-toggle" class="start" disabled>Start translation <span aria-hidden="true">↗</span></button></div>
+      <p class="route-status" id="listen-status" role="status">Connecting audio…</p>
+      <div class="sample-check"><button id="listen-check" class="text-button" type="button">Test with sample</button><span id="listen-check-status" class="check-result" role="status"></span></div>
+    </section>
+
+    <p class="hint">Sample tests use Gemini audio and play only on your listening device.</p>
+    <section class="meet-setup" aria-label="Meeting configuration">
+      <div class="meeting-instructions"><h2>Set up Google Meet</h2><p>In Meet, open <strong>Settings → Audio</strong> and choose:</p><dl class="meeting-devices"><div><dt>Microphone</dt><dd id="meet-mic">GeminiMic</dd></div><div><dt>Speaker</dt><dd id="meet-speaker">GeminiSpeaker</dd></div></dl></div>
+      <button class="connection device-check-button" id="connection" type="button" title="Check virtual and physical audio devices">Check devices</button>
+    </section>
+    <footer>Translation off = normal audio. Keep this app open.<br>Use headphones to avoid acoustic echo.</footer>
+  </main>
+
+  <dialog id="settings-dialog" aria-labelledby="settings-title">
+    <form id="settings-form" novalidate>
+      <div class="dialog-heading"><h2 id="settings-title">Settings</h2><button type="button" id="settings-close" class="icon-button" aria-label="Close settings">×</button></div>
+      <div class="settings-tabs" role="tablist" aria-label="Settings sections">
+        <button type="button" id="tab-gemini" role="tab" data-settings-tab="gemini" aria-controls="panel-gemini" aria-selected="true">Gemini</button>
+        <button type="button" id="tab-audio" role="tab" data-settings-tab="audio" aria-controls="panel-audio" aria-selected="false" tabindex="-1">Audio tuning</button>
+        <button type="button" id="tab-virtual" role="tab" data-settings-tab="virtual" aria-controls="panel-virtual" aria-selected="false" tabindex="-1">Virtual devices</button>
+      </div>
+      <section id="panel-gemini" class="settings-panel" data-settings-panel="gemini" role="tabpanel" aria-labelledby="tab-gemini">
+      <section class="instructions" aria-label="Gemini setup instructions"><h3>Connect to Gemini</h3><ol><li>Paste your <strong>Gemini API key</strong> below.</li><li>Choose <strong>Check connection</strong> to verify the key and model.</li><li>Choose <strong>Save settings</strong>, then start either translation direction.</li></ol><p>Your spoken language is detected automatically. Each direction has its own target language on the main screen.</p></section>
+      <fieldset><legend>Gemini connection</legend>
+        <label>API key<input id="api-key" type="password" autocomplete="off" placeholder="Enter your Gemini API key"></label>
+        <div class="key-row"><small id="key-status"></small><button type="button" id="forget-key" class="text-button">Forget key</button></div>
+        <label>Model<input id="model" required></label>
+        <label>Base URL<input id="baseUrl" type="url" required></label>
+        <div class="health-row"><button type="button" id="check-connection" class="quiet">Check connection</button><span id="connection-check-status" class="check-result" role="status"></span></div>
+        <p class="hint">Checks the entered key, model and endpoint without saving them or sending audio.</p>
+        <p class="hint">Gemini receives audio when you start translation or a sample test. Normal audio stays on your computer.</p>
+      </fieldset>
+      </section>
+      <section id="panel-audio" class="settings-panel" data-settings-panel="audio" role="tabpanel" aria-labelledby="tab-audio" hidden>
+      <fieldset><legend>Latency & session tuning</legend><div class="settings-grid">
+        <label>Send audio every (ms)<input id="chunkMs" type="number" min="20" max="200" required></label>
+        <label>Playback buffer (ms)<input id="playbackBufferMs" type="number" min="0" max="1000" required></label>
+        <label>Maximum queued audio (ms)<input id="maxBufferMs" type="number" min="200" max="10000" required></label>
+        <label>Stop after silence (seconds)<input id="silenceSeconds" type="number" min="0" max="3600" required></label>
+      </div><p class="hint">0 seconds disables the silence timeout. Each direction stops independently and returns to normal audio.</p>
+      <label class="checkbox"><input type="checkbox" id="echoTargetLanguage">Keep speech audible when it is already in the target language</label>
+      <p class="hint">The queue limit drops older translated audio when delayed. Network and model latency vary.</p></fieldset>
+      </section>
+      <section id="panel-virtual" class="settings-panel" data-settings-panel="virtual" role="tabpanel" aria-labelledby="tab-virtual" hidden>
+      <div id="routing-details">
+        <h3>Audio system & virtual devices</h3>
+        <label for="audio-backend">Audio backend</label>
+        <select id="audio-backend" aria-describedby="backend-current">
+          <option value="auto">Automatic · use an available backend</option>
+          <option value="pulse">PulseAudio / PipeWire Pulse (pactl)</option>
+          <option value="pipewire">Native PipeWire / WirePlumber (without pactl)</option>
+          <option value="external">Existing virtual cables · manual mapping</option>
+        </select>
+        <p id="backend-current" class="hint" role="status"></p>
+        <div class="backend-actions"><button type="button" id="backend-check" class="quiet">Check selected</button><button type="button" id="backend-check-all" class="quiet">Check all backends</button><button type="button" id="backend-apply" class="primary">Use selected & test routing</button></div>
+        <p class="hint">Dependency checks leave current audio running. Choose a backend before joining a call: applying one recreates virtual devices and restarts both routes in normal mode. Reselect GeminiMic and GeminiSpeaker in your meeting afterward. Checks stay local.</p>
+        <p id="backend-progress" class="check-result" role="status"></p>
+        <div id="backend-reports" aria-live="polite"></div>
+        <p class="instructions">Meet uses <strong>GeminiMic</strong> as its microphone and <strong>GeminiSpeaker</strong> as its speaker. Check that both virtual cables and your physical audio devices are ready before joining a call.</p>
+        <button type="button" id="check-devices" class="primary">Check devices</button>
+        <p id="device-check-status" class="check-result" role="status"></p>
+        <p id="routing-description" class="hint"></p>
+        <div id="external-routing" hidden>
+          <p class="hint">Two independent virtual cables are required. Rename the meeting-facing input to GeminiMic and the meeting-facing output to GeminiSpeaker where the OS/driver permits. Device names shown in Meet are controlled by the driver.</p>
+          <label>Outgoing cable · app playback output<select id="virtualMicFeed"></select></label>
+          <label>Outgoing cable · meeting microphone<select id="virtualMic"></select></label>
+          <label>Incoming cable · meeting speaker<select id="virtualSpeaker"></select></label>
+          <label>Incoming cable · app capture input<select id="virtualSpeakerCapture"></select></label>
+          <p class="hint">This mode uses installed drivers. Their devices remain installed when the app closes. On Windows, use two VB-CABLE endpoints (for example Cable A and B). On macOS, use two separately named BlackHole devices. One shared cable cannot isolate both directions. Third-party drivers are not bundled.</p>
+          <button id="driver-guide" type="button" class="quiet">Open driver website ↗</button>
+        </div>
+        <div class="routing-actions"><button type="button" id="repair-routing" class="quiet">Repair / refresh audio</button><button type="button" id="remove-routing" class="text-button">Remove virtual devices</button></div>
+      </div>
+      </section>
+      <p class="hint settings-note">Saving connection or tuning changes stops translation and keeps normal audio flowing. Press Start again to translate.</p>
+      <p id="settings-error" class="error" role="alert" hidden></p>
+      <button class="primary save" id="settings-save" type="submit">Save settings</button>
+    </form>
+  </dialog>
+</body>
+</html>
