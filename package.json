@@ -78,7 +78,7 @@
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist"
     },
-    "extraFiles": [
+    "extraResources": [
       {
         "from": "README.md",
         "to": "README.md"
