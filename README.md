@@ -23,6 +23,19 @@ The Electron app is at the repository root. The browser extension and a separate
 
 Keep the app open while calling. Headphones help avoid acoustic echo.
 
+### macOS quick start
+
+Needs macOS 13+, [Homebrew](https://brew.sh) and Node.js 22.12+.
+
+```sh
+git clone https://github.com/hrmiitm/live-translator.git
+cd live-translator
+npm run setup:mac   # installs BlackHole 2ch + 16ch and npm dependencies (asks for your password)
+npm start
+```
+
+Allow microphone access when macOS asks. The app detects both BlackHole cables and maps them automatically (**Settings → Virtual devices → Auto-detect cables** remaps them at any time). In Meet, choose **BlackHole 2ch** as microphone and **BlackHole 16ch** as speaker.
+
 ## Audio dependencies
 
 `npm install` installs Electron and JavaScript dependencies. OS audio tools and virtual drivers are separate; the app checks them and reports what is missing.
@@ -31,7 +44,7 @@ Keep the app open while calling. Headphones help avoid acoustic echo.
 | --- | --- |
 | Linux | A running PulseAudio or PipeWire audio service. Automatic tries `pactl`, then native PipeWire using `pw-loopback` + `pw-dump`. `wpctl` is optional and cannot create the cables alone. |
 | Windows | Install two independent virtual cables, such as [VB-CABLE A+B](https://vb-audio.com/Cable/), then map all four endpoints in Settings. |
-| macOS 13+ | Install two independent CoreAudio loopback buses, such as separately configured [BlackHole devices](https://github.com/ExistentialAudio/BlackHole), then map all four endpoints in Settings. |
+| macOS 13+ | Run `npm run setup:mac` to install two independent [BlackHole](https://github.com/ExistentialAudio/BlackHole) drivers (2ch and 16ch). The app maps all four endpoints automatically; adjust them in Settings if needed. |
 
 Linux tool packages, if the dependency report identifies them as missing:
 

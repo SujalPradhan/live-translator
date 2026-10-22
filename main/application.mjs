@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu, nativeTheme, net, powerSaveBlocker, protocol, safeStorage, session, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, nativeTheme, net, powerSaveBlocker, protocol, safeStorage, session, shell, systemPreferences } from 'electron';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { SettingsStore } from './store.mjs';
@@ -126,6 +126,10 @@ export async function launch({ userData, socketFactory, beforeWindow, show = tru
   process.once('SIGINT', () => app.quit());
   try { await routing.reset(); } catch (error) { startupError = error.message; }
   if (quitting) return { window, store, routing, sessions };
+  // Ask before the window enumerates devices; an undetermined macOS
+  // microphone permission otherwise hides device labels and capture fails.
+  if (process.platform === 'darwin' && systemPreferences.getMediaAccessStatus('microphone') === 'not-determined')
+    await systemPreferences.askForMediaAccess('microphone').catch(() => {});
   await window.loadURL(home);
   if (show) window.show();
   return { window, store, routing, sessions };

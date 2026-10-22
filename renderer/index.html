@@ -99,11 +99,12 @@
         <p id="routing-description" class="hint"></p>
         <div id="external-routing" hidden>
           <p class="hint">Two independent virtual cables are required. Rename the meeting-facing input to GeminiMic and the meeting-facing output to GeminiSpeaker where the OS/driver permits. Device names shown in Meet are controlled by the driver.</p>
+          <div class="health-row"><button type="button" id="auto-detect" class="quiet">Auto-detect cables</button><span id="auto-detect-status" class="check-result" role="status"></span></div>
           <label>Outgoing cable · app playback output<select id="virtualMicFeed"></select></label>
           <label>Outgoing cable · meeting microphone<select id="virtualMic"></select></label>
           <label>Incoming cable · meeting speaker<select id="virtualSpeaker"></select></label>
           <label>Incoming cable · app capture input<select id="virtualSpeakerCapture"></select></label>
-          <p class="hint">This mode uses installed drivers. Their devices remain installed when the app closes. On Windows, use two VB-CABLE endpoints (for example Cable A and B). On macOS, use two separately named BlackHole devices. One shared cable cannot isolate both directions. Third-party drivers are not bundled.</p>
+          <p class="hint">This mode uses installed drivers. Their devices remain installed when the app closes. On Windows, use two VB-CABLE endpoints (for example Cable A and B). On macOS, run <code>npm run setup:mac</code> to install BlackHole 2ch and BlackHole 16ch, then press Auto-detect cables. One shared cable cannot isolate both directions. Third-party drivers are not bundled.</p>
           <button id="driver-guide" type="button" class="quiet">Open driver website ↗</button>
         </div>
         <div class="routing-actions"><button type="button" id="repair-routing" class="quiet">Repair / refresh audio</button><button type="button" id="remove-routing" class="text-button">Remove virtual devices</button></div>

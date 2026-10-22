@@ -1,4 +1,6 @@
 const virtualName = /gemini(?:mic|speaker)|emotioncast|blackhole|cable (?:input|output)|vb-audio|soundflower|\bmonitor\b|loopback/i;
+const fieldNames = { virtualMicFeed: 'Outgoing cable · app playback output', virtualMic: 'Outgoing cable · meeting microphone',
+  virtualSpeaker: 'Incoming cable · meeting speaker', virtualSpeakerCapture: 'Incoming cable · app capture input' };
 export const isAlias = device => ['default', 'communications'].includes(device.deviceId);
 export const sameLabel = (left, right) => left.replace(/^(default|communications)\s*[-:]\s*/i, '').toLowerCase() === right.toLowerCase();
 
@@ -43,11 +45,35 @@ export function virtualEndpoints(devices, settings, native) {
   for (const [name, kind] of Object.entries(kinds)) {
     const device = devices.find(device => !isAlias(device) && device.kind === kind &&
       (native.managed ? sameLabel(device.label, native.labels[name]) : device.deviceId === settings[name]));
-    if (!device) throw Error(`Missing ${native.managed ? native.labels[name] : name}. Open Settings → Virtual devices.`);
+    if (!device) throw Error(native.managed ? `Missing ${native.labels[name]}. Open Settings → Virtual devices.` :
+      `Choose “${fieldNames[name]}” in Settings → Virtual devices, or press Auto-detect cables.`);
     endpoints[name] = device;
   }
-  if (endpoints.virtualMic.deviceId === endpoints.virtualSpeakerCapture.deviceId ||
-    endpoints.virtualMicFeed.deviceId === endpoints.virtualSpeaker.deviceId)
-    throw Error('Use two separate virtual cables. Sharing one cable creates a feedback loop.');
+  const shared = endpoints.virtualMic.deviceId === endpoints.virtualSpeakerCapture.deviceId ? endpoints.virtualMic :
+    endpoints.virtualMicFeed.deviceId === endpoints.virtualSpeaker.deviceId ? endpoints.virtualMicFeed : null;
+  if (shared) throw Error(`Use two separate virtual cables. “${shared.label}” is mapped to both directions, which creates a feedback loop.`);
   return endpoints;
+}
+
+// CoreAudio loopback drivers (BlackHole, or custom GeminiMic/GeminiSpeaker
+// builds) expose one input and one output with the same name. Pair those into
+// cables and map one cable per direction. Returns null without two cables.
+export function suggestMappings(devices) {
+  const cables = new Map();
+  for (const device of devices) {
+    if (isAlias(device) || !virtualName.test(device.label)) continue;
+    const name = device.label.replace(/\s*\(virtual\)\s*$/i, '').trim().toLowerCase();
+    const cable = cables.get(name) || { name };
+    cable[device.kind] ??= device;
+    cables.set(name, cable);
+  }
+  const channels = cable => Number(/(\d+)\s*ch\b/.exec(cable.name)?.[1] ?? Infinity);
+  const usable = [...cables.values()].filter(cable => cable.audioinput && cable.audiooutput)
+    .sort((left, right) => channels(left) - channels(right) || left.name.localeCompare(right.name));
+  // The smallest bus (BlackHole 2ch) is the most meeting-compatible microphone.
+  const outgoing = usable.find(cable => /geminimic/.test(cable.name)) || usable.find(cable => !/geminispeaker/.test(cable.name));
+  const incoming = usable.find(cable => cable !== outgoing && /geminispeaker/.test(cable.name)) || usable.find(cable => cable !== outgoing);
+  if (!outgoing || !incoming) return null;
+  return { virtualMicFeed: outgoing.audiooutput.deviceId, virtualMic: outgoing.audioinput.deviceId,
+    virtualSpeaker: incoming.audiooutput.deviceId, virtualSpeakerCapture: incoming.audioinput.deviceId };
 }

@@ -10,6 +10,7 @@
   "main": "main/index.mjs",
   "scripts": {
     "start": "node main/start.mjs",
+    "setup:mac": "bash scripts/setup-mac.sh",
     "test": "node --test tests/*.test.mjs",
     "test:desktop": "node tests/desktop.mjs",
     "pack": "electron-builder --dir",

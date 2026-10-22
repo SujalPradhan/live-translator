@@ -27,7 +27,7 @@ export async function probeBackend(id, { platform = process.platform, run = exec
   if (id === 'external') {
     report.checks.push({ label: 'OS audio through Electron', passed: true, required: true, detail: 'No pactl or wpctl dependency. Physical and virtual endpoint access is checked in this window.' });
     report.available = true;
-    report.guidance = [platform === 'darwin' ? 'Install two independent CoreAudio loopback cables (for example separately configured BlackHole devices), then map all four endpoints below.' :
+    report.guidance = [platform === 'darwin' ? 'Install two independent CoreAudio loopback cables: run "npm run setup:mac" in the app folder (or "brew install --cask blackhole-2ch blackhole-16ch"), then press Auto-detect cables below.' :
       platform === 'win32' ? 'Install two independent Windows virtual cables (for example VB-CABLE A+B), then map all four endpoints below.' :
         'Map two existing independent virtual cables below. This mode does not create or delete driver devices.',
       'Installed third-party drivers remain installed when the app closes. Automatic device lifecycle is available only with the managed Linux backends.'];

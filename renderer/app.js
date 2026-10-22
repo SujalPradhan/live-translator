@@ -1,6 +1,6 @@
 import { defaults, languages } from '../shared/settings.js';
 import { AudioRoute } from './route.js';
-import { chooseDevice, deviceLists, isAlias, virtualEndpoints } from './devices.js';
+import { chooseDevice, deviceLists, isAlias, suggestMappings, virtualEndpoints } from './devices.js';
 import { SamplePlayer } from './sample-player.js';
 
 const $ = id => document.getElementById(id);
@@ -109,6 +109,13 @@ async function connectAudio(force = false) {
   renderRouting(); renderDevices();
   try {
     if (native.managed && !native.ready) throw Error(native.message);
+    // First run with installed cables (for example BlackHole 2ch + 16ch): map
+    // them automatically instead of asking for four manual selections.
+    const mappingNames = ['virtualMicFeed', 'virtualMic', 'virtualSpeaker', 'virtualSpeakerCapture'];
+    if (!native.managed && mappingNames.every(name => !settings[name])) {
+      const suggestion = suggestMappings(devices);
+      if (suggestion) { await persist(suggestion); renderDevices(); }
+    }
     const endpoints = virtualEndpoints(devices, settings, native);
     const lists = deviceLists(devices, settings, native);
     let input, output, inputError, outputError;
@@ -381,7 +388,12 @@ async function checkBackends(all) {
         try {
           const endpoints = virtualEndpoints(await navigator.mediaDevices.enumerateDevices(), { ...settings, ...readMappings() }, { managed: false });
           for (const [name, device] of Object.entries(endpoints)) report.checks.push({ label: name, passed: true, required: true, detail: device.label });
-        } catch (error) { report.checks.push({ label: 'Installed virtual cable mapping', passed: false, required: true, detail: cleanError(error) }); report.available = false; }
+        } catch (error) {
+          report.checks.push({ label: 'Installed virtual cable mapping', passed: false, required: true, detail: cleanError(error) }); report.available = false;
+          report.guidance.unshift(suggestMappings(await navigator.mediaDevices.enumerateDevices()) ? 'Two cables were found. Press Auto-detect cables, then Use selected & test routing.' :
+            native.platform === 'darwin' ? 'Fewer than two virtual cables were found. In Terminal, run "npm run setup:mac" in the app folder, then press Auto-detect cables.' :
+              'Fewer than two virtual cables were found. Install two independent cables, then map them below.');
+        }
       }
       if (report.available) available++;
       backendReport(report);
@@ -420,6 +432,13 @@ $('backend-apply').addEventListener('click', async () => {
     $('backend-progress').textContent = cleanError(error);
     await refreshAudio();
   } finally { setBackendBusy(false); }
+});
+$('auto-detect').addEventListener('click', async () => {
+  const suggestion = suggestMappings(await navigator.mediaDevices.enumerateDevices());
+  if (suggestion) { draftMappings = suggestion; renderDevices(); }
+  $('auto-detect-status').textContent = suggestion ? 'Cables mapped. Press Use selected & test routing to save and verify.' :
+    native.platform === 'darwin' ? 'Fewer than two virtual cables found. Run "npm run setup:mac", then try again.' : 'Fewer than two virtual cables found. Install two independent cables, then try again.';
+  $('auto-detect-status').className = 'check-result ' + (suggestion ? 'passed' : 'failed');
 });
 $('driver-guide').addEventListener('click', () => bridge.openGuide(native.platform === 'win32' ? 'windows' : native.platform === 'linux' ? 'linux' : 'mac'));
 bridge.onTranslation(event => routes[event.direction]?.event(event));

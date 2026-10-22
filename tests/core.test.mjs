@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { defaults, translationSetup, validateSettings } from '../shared/settings.js';
 import { Resampler, playbackPlan } from '../renderer/pcm.js';
-import { chooseDevice, deviceLists, virtualEndpoints } from '../renderer/devices.js';
+import { chooseDevice, deviceLists, suggestMappings, virtualEndpoints } from '../renderer/devices.js';
 import { SettingsStore } from '../main/store.mjs';
 import { AudioRouting, endpointLabels } from '../main/routing.mjs';
 import { AudioRoute } from '../renderer/route.js';
@@ -71,6 +71,33 @@ test('virtual defaults are excluded; physical pairing uses group IDs, missing ex
 test('external virtual routing rejects a single cable shared by both directions', () => {
   const devices = [device('in', 'Cable output', 'audioinput'), device('out', 'Cable input', 'audiooutput')];
   assert.throws(() => virtualEndpoints(devices, { virtualMicFeed: 'out', virtualMic: 'in', virtualSpeaker: 'out', virtualSpeakerCapture: 'in' }, { managed: false }), /separate/);
+});
+
+test('macOS cable auto-detection maps BlackHole 2ch outgoing and 16ch incoming', () => {
+  const devices = [
+    device('default', 'Default - MacBook Air Microphone', 'audioinput'), device('mic', 'MacBook Air Microphone', 'audioinput'),
+    device('spk', 'MacBook Air Speakers', 'audiooutput'),
+    device('bh16-in', 'BlackHole 16ch (Virtual)', 'audioinput'), device('bh16-out', 'BlackHole 16ch (Virtual)', 'audiooutput'),
+    device('bh2-in', 'BlackHole 2ch (Virtual)', 'audioinput'), device('bh2-out', 'BlackHole 2ch (Virtual)', 'audiooutput')
+  ];
+  const mappings = suggestMappings(devices);
+  assert.deepEqual(mappings, { virtualMicFeed: 'bh2-out', virtualMic: 'bh2-in', virtualSpeaker: 'bh16-out', virtualSpeakerCapture: 'bh16-in' });
+  const endpoints = virtualEndpoints(devices, mappings, { managed: false });
+  assert.equal(endpoints.virtualMic.label, 'BlackHole 2ch (Virtual)');
+  assert.equal(endpoints.virtualSpeaker.label, 'BlackHole 16ch (Virtual)');
+});
+
+test('cable auto-detection prefers Gemini names and needs two independent cables', () => {
+  const cable = (id, label) => [device(`${id}-in`, label, 'audioinput'), device(`${id}-out`, label, 'audiooutput')];
+  assert.equal(suggestMappings(cable('bh2', 'BlackHole 2ch')), null);
+  assert.equal(suggestMappings([device('mic', 'MacBook Air Microphone', 'audioinput'), device('spk', 'MacBook Air Speakers', 'audiooutput')]), null);
+  assert.equal(suggestMappings([device('bh2-in', 'BlackHole 2ch', 'audioinput'), ...cable('bh16', 'BlackHole 16ch')]), null);
+  const named = suggestMappings([...cable('speaker', 'GeminiSpeaker'), ...cable('bh2', 'BlackHole 2ch'), ...cable('mic', 'GeminiMic')]);
+  assert.equal(named.virtualMic, 'mic-in'); assert.equal(named.virtualSpeakerCapture, 'speaker-in');
+});
+
+test('external mapping errors name the missing field', () => {
+  assert.throws(() => virtualEndpoints([], {}, { managed: false }), /Outgoing cable · app playback output.*Auto-detect/);
 });
 
 test('keys never enter public settings and basic_text is never used for persistence', async () => {
