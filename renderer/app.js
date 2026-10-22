@@ -109,11 +109,13 @@ async function connectAudio(force = false) {
   renderRouting(); renderDevices();
   try {
     if (native.managed && !native.ready) throw Error(native.message);
-    // First run with installed cables (for example BlackHole 2ch + 16ch): map
-    // them automatically instead of asking for four manual selections.
-    const mappingNames = ['virtualMicFeed', 'virtualMic', 'virtualSpeaker', 'virtualSpeakerCapture'];
-    if (!native.managed && mappingNames.every(name => !settings[name])) {
-      const suggestion = suggestMappings(devices);
+    // Installed cables (for example BlackHole 2ch + 16ch) with no usable
+    // mapping, whether empty or stale: map them automatically instead of
+    // asking for four manual selections. A valid mapping is never replaced.
+    if (!native.managed) {
+      let valid = true;
+      try { virtualEndpoints(devices, settings, native); } catch { valid = false; }
+      const suggestion = !valid && suggestMappings(devices);
       if (suggestion) { await persist(suggestion); renderDevices(); }
     }
     const endpoints = virtualEndpoints(devices, settings, native);
